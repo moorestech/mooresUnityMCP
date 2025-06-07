@@ -1,5 +1,7 @@
 https://github.com/justinpbarnett/unity-mcp からfork
 
+> **Fork Repository:** https://github.com/moorestech/mooresUnityMCP
+
 # Unity MCP ✨
 
 **Connect your Unity Editor to LLMs using the Model Context Protocol.**
@@ -74,10 +76,13 @@ Unity MCP connects your tools using two components:
 3.  Click `+` -> `Add package from git URL...`.
 4.  Enter:
     ```
-    https://github.com/justinpbarnett/unity-mcp.git?path=/UnityMcpBridge
+    https://github.com/moorestech/mooresUnityMCP.git?path=UnityMcpBridge/Assets/Scripts
     ```
+    > **Note:** For the original repository, use `https://github.com/justinpbarnett/unity-mcp.git?path=UnityMcpBridge/Assets/Scripts`
 5.  Click `Add`.
 6. The MCP Server should automatically be installed onto your machine as a result of this process.
+
+> **Alternative:** Since this project contains both Unity project and Python server components, you may prefer to clone the entire repository and open the `UnityMcpBridge` folder as a Unity project instead of importing it as a package.
 
 ### Step 2: Configure Your MCP Client
 
