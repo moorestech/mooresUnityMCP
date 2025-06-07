@@ -182,13 +182,26 @@ def register_manage_animation_tools(mcp: FastMCP):
             return {"success": False, "message": f"Python error: {str(e)}"}
 ```
 
-#### 2.2 server.pyでツールを登録
+#### 2.2 tools/__init__.pyでツールを登録
+`UnityMcpServer/src/tools/__init__.py`ファイルを編集：
+
 ```python
 # インポートセクションに追加
-from tools.manage_animation import register_manage_animation_tools
+from .manage_animation import register_manage_animation_tools
 
-# lifespan関数内で登録
-register_manage_animation_tools(mcp)
+# register_all_tools関数内に追加
+def register_all_tools(mcp):
+    """Register all refactored tools with the MCP server."""
+    print("Registering Unity MCP Server refactored tools...")
+    register_manage_script_tools(mcp)
+    register_manage_scene_tools(mcp)
+    register_manage_editor_tools(mcp)
+    register_manage_gameobject_tools(mcp)
+    register_manage_asset_tools(mcp)
+    register_read_console_tools(mcp)
+    register_execute_menu_item_tools(mcp)
+    register_manage_animation_tools(mcp)  # 新規追加
+    print("Unity MCP Server tool registration complete.")
 ```
 
 ### 3. ツール実装のベストプラクティス
