@@ -56,13 +56,11 @@ namespace UnityMcpBridge.Editor.Tools
                     fileName = Path.GetFileNameWithoutExtension(fileName) + ".png";
                 }
 
-                // Use Screenshots directory in project root
-                string projectPath = Path.GetDirectoryName(Application.dataPath);
-                string screenshotsDir = Path.Combine(projectPath, "Screenshots");
+                // Use system temp directory
+                string screenshotsDir = Path.Combine(Path.GetTempPath(), "UnityMcpScreenshots");
                 if (!Directory.Exists(screenshotsDir))
                 {
                     Directory.CreateDirectory(screenshotsDir);
-                    Debug.Log($"Created Screenshots directory at: {screenshotsDir}");
                 }
 
                 string fullPath = Path.Combine(screenshotsDir, fileName);
@@ -72,42 +70,11 @@ namespace UnityMcpBridge.Editor.Tools
                     // Capture Game View
                     ScreenCapture.CaptureScreenshot(fullPath, superSize);
                     
-                    // Wait for the file to be written
-                    System.Threading.Tasks.Task.Run(async () =>
+                    // Wait a frame for the screenshot to be saved
+                    EditorApplication.delayCall += () =>
                     {
-                        int maxWaitTime = 5000; // 5 seconds max wait
-                        int waitedTime = 0;
-                        int checkInterval = 100; // Check every 100ms
-                        
-                        while (waitedTime < maxWaitTime)
-                        {
-                            if (File.Exists(fullPath))
-                            {
-                                // File exists, but might still be writing
-                                await System.Threading.Tasks.Task.Delay(500); // Extra delay to ensure write is complete
-                                break;
-                            }
-                            
-                            await System.Threading.Tasks.Task.Delay(checkInterval);
-                            waitedTime += checkInterval;
-                        }
-                        
-                        // Log on main thread
-                        EditorApplication.delayCall += () =>
-                        {
-                            if (File.Exists(fullPath))
-                            {
-                                Debug.Log($"Screenshot saved to: {fullPath}");
-                            }
-                            else
-                            {
-                                Debug.LogError($"Screenshot file was not created at: {fullPath}");
-                            }
-                        };
-                    });
-                    
-                    // Add a synchronous delay to give the screenshot time to start saving
-                    System.Threading.Thread.Sleep(1000);
+                        Debug.Log($"Screenshot saved to: {fullPath}");
+                    };
                 }
                 else
                 {
