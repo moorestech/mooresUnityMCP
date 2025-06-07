@@ -1,3 +1,5 @@
+https://github.com/justinpbarnett/unity-mcp からfork
+
 # Unity MCP ✨
 
 **Connect your Unity Editor to LLMs using the Model Context Protocol.**

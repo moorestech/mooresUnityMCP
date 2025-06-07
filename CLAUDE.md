@@ -26,8 +26,7 @@ Unity MCPは、LLM（Claude、Cursorなど）がUnity Editorと直接対話で�
 
 1. **Unity MCP Bridge（C#）** - UnityEditor内で実行
    - `UnityMcpBridge.cs`: メインTCPサーバー（ポート6400）、コマンドキュー管理
-   - `CommandRegistry.cs`: コマンド名をハンドラーメソッドにマッピング
-   - `Tools/`フォルダ: 各Unity操作の実装
+   - `Assets/Scripts/Editor/Tools/`フォルダ: 各Unity操作の実装
 
 2. **Unity MCP Server（Python）** - ローカルで実行
    - `server.py`: FastMCPベースのサーバー、stdio経由でMCPクライアントと通信
@@ -70,7 +69,7 @@ Unity MCPは、LLM（Claude、Cursorなど）がUnity Editorと直接対話で�
 ### 1. Unity側（C#）の実装
 
 #### 1.1 新しいツールクラスを作成
-`UnityMcpBridge/Editor/Tools/`フォルダに新しいC#ファイルを作成：
+`UnityMcpBridge/Assets/Scripts/Editor/Tools/`フォルダに新しいC#ファイルを作成：
 
 ```csharp
 using System;
@@ -217,3 +216,6 @@ def register_all_tools(mcp):
 1. Unityエディタを再起動（C#コードのリロード）
 2. MCPクライアント（Claude、Cursor）を再起動
 3. 新しいツールを呼び出してテスト
+
+# ファイルの作成について
+*.metaファイルは作成しないでください。この作成によってGUIDが被り、正しくコンパイルできない状況が発生します。
