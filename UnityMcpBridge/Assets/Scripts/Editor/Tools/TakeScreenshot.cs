@@ -46,7 +46,7 @@ namespace UnityMcpBridge.Editor.Tools
                 // Generate filename if not provided
                 if (string.IsNullOrEmpty(fileName))
                 {
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
                     fileName = $"Screenshot_{timestamp}.png";
                 }
 
@@ -56,8 +56,8 @@ namespace UnityMcpBridge.Editor.Tools
                     fileName = Path.GetFileNameWithoutExtension(fileName) + ".png";
                 }
 
-                // Create Screenshots directory if it doesn't exist
-                string screenshotsDir = Path.Combine(Application.dataPath, "..", "Screenshots");
+                // Use system temp directory
+                string screenshotsDir = Path.Combine(Path.GetTempPath(), "UnityMcpScreenshots");
                 if (!Directory.Exists(screenshotsDir))
                 {
                     Directory.CreateDirectory(screenshotsDir);
