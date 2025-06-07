@@ -14,7 +14,7 @@ namespace UnityMcpBridge.Editor.Helpers
         private const string BranchName = "master";
         private const string GitUrl = "https://github.com/moorestech/mooresUnityMCP";
         private const string PyprojectUrl =
-            "https://raw.githubusercontent.com/justinpbarnett/unity-mcp/refs/heads/"
+            "https://raw.githubusercontent.com/moorestech/mooresUnityMCP/refs/heads/"
             + BranchName
             + "/UnityMcpServer/src/pyproject.toml";
 

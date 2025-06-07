@@ -369,7 +369,7 @@ namespace UnityMcpBridge.Editor.Windows
                 {
                     foreach (UnityEditor.PackageManager.PackageInfo package in request.Result)
                     {
-                        if (package.name == "com.justinpbarnett.unity-mcp")
+                        if (package.name == "com.moorestech.unity-mcp")
                         {
                             string packagePath = package.resolvedPath;
                             string potentialPythonDir = Path.Combine(packagePath, "Python");
