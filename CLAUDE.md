@@ -64,3 +64,143 @@ Unity MCPは、LLM（Claude、Cursorなど）がUnity Editorと直接対話で�
 - デバッグ時は`config.py`の`log_level`を"DEBUG"に設定
 - UnityブリッジはPythonサーバーを自動的にインストール/更新（`ServerInstaller.cs`）
 - 新しいツールを追加する場合は、Unity側とPython側の両方に実装が必要
+
+## 新しいMCPツールの追加方法
+
+### 1. Unity側（C#）の実装
+
+#### 1.1 新しいツールクラスを作成
+`UnityMcpBridge/Editor/Tools/`フォルダに新しいC#ファイルを作成：
+
+```csharp
+using System;
+using Newtonsoft.Json.Linq;
+using UnityEngine;
+using UnityMcpBridge.Editor.Helpers;
+
+namespace UnityMcpBridge.Editor.Tools
+{
+    public static class ManageAnimation  // 例：アニメーション管理ツール
+    {
+        public static object HandleCommand(JObject @params)
+        {
+            string action = @params["action"]?.ToString().ToLower();
+            if (string.IsNullOrEmpty(action))
+            {
+                return Response.Error("Action parameter is required.");
+            }
+
+            try
+            {
+                switch (action)
+                {
+                    case "play":
+                        return PlayAnimation(@params);
+                    case "stop":
+                        return StopAnimation(@params);
+                    default:
+                        return Response.Error($"Unknown action: '{action}'.");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ManageAnimation] Action '{action}' failed: {e}");
+                return Response.Error($"Internal error: {e.Message}");
+            }
+        }
+
+        private static object PlayAnimation(JObject @params)
+        {
+            // 実装
+            return Response.Success("Animation played successfully.");
+        }
+    }
+}
+```
+
+#### 1.2 UnityMcpBridge.csにツールを登録
+`ExecuteCommand`メソッドのswitchステートメントに追加：
+
+```csharp
+object result = command.type switch
+{
+    // 既存のツール...
+    "manage_animation" => ManageAnimation.HandleCommand(paramsObject), // 新規追加
+    _ => throw new ArgumentException($"Unknown command type: {command.type}"),
+};
+```
+
+### 2. Python側の実装
+
+#### 2.1 新しいツールファイルを作成
+`UnityMcpServer/src/tools/`フォルダに新しいPythonファイルを作成：
+
+```python
+from mcp.server.fastmcp import FastMCP, Context
+from typing import Dict, Any
+from unity_connection import get_unity_connection
+
+def register_manage_animation_tools(mcp: FastMCP):
+    """Register animation management tools with the MCP server."""
+
+    @mcp.tool()
+    def manage_animation(
+        ctx: Context,
+        action: str,
+        target: str = None,
+        animation_name: str = None,
+        speed: float = 1.0,
+    ) -> Dict[str, Any]:
+        """Manages animations in Unity.
+
+        Args:
+            action: Operation ('play', 'stop', 'pause', etc.)
+            target: GameObject identifier
+            animation_name: Name of the animation clip
+            speed: Playback speed
+
+        Returns:
+            Dictionary with operation results.
+        """
+        try:
+            params = {
+                "action": action,
+                "target": target,
+                "animationName": animation_name,
+                "speed": speed,
+            }
+            params = {k: v for k, v in params.items() if v is not None}
+            
+            response = get_unity_connection().send_command("manage_animation", params)
+            
+            if response.get("success"):
+                return {"success": True, "message": response.get("message"), "data": response.get("data")}
+            else:
+                return {"success": False, "message": response.get("error")}
+                
+        except Exception as e:
+            return {"success": False, "message": f"Python error: {str(e)}"}
+```
+
+#### 2.2 server.pyでツールを登録
+```python
+# インポートセクションに追加
+from tools.manage_animation import register_manage_animation_tools
+
+# lifespan関数内で登録
+register_manage_animation_tools(mcp)
+```
+
+### 3. ツール実装のベストプラクティス
+
+1. **エラーハンドリング**: 包括的なtry-catchでエラーを捕捉
+2. **Undo対応**: Unity側で`Undo.RecordObject`を使用
+3. **パラメータ検証**: 必須パラメータの確認とデフォルト値設定
+4. **レスポンス形式**: `Response.Success`/`Response.Error`で一貫性維持
+5. **ログ出力**: `Debug.Log`/`Debug.LogError`で適切なデバッグ情報
+
+### 4. テスト手順
+
+1. Unityエディタを再起動（C#コードのリロード）
+2. MCPクライアント（Claude、Cursor）を再起動
+3. 新しいツールを呼び出してテスト
