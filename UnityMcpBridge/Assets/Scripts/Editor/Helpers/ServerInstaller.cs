@@ -9,14 +9,14 @@ namespace UnityMcpBridge.Editor.Helpers
 {
     public static class ServerInstaller
     {
-        private const string RootFolder = "UnityMCP";
-        private const string ServerFolder = "UnityMcpServer";
+        private const string RootFolder = "mooresUnityMCP";
+        private const string ServerFolder = "mooresUnityMcpServer";
         private const string BranchName = "master";
-        private const string GitUrl = "https://github.com/justinpbarnett/unity-mcp.git";
+        private const string GitUrl = "https://github.com/moorestech/mooresUnityMCP";
         private const string PyprojectUrl =
             "https://raw.githubusercontent.com/justinpbarnett/unity-mcp/refs/heads/"
             + BranchName
-            + "/UnityMcpServer/src/pyproject.toml";
+            + "/mooresUnityMCP/src/pyproject.toml";
 
         /// <summary>
         /// Ensures the unity-mcp-server is installed and up to date.
