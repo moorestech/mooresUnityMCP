@@ -7,6 +7,7 @@ from .read_console import register_read_console_tools
 from .execute_menu_item import register_execute_menu_item_tools
 from .take_screenshot import register_take_screenshot_tools
 from .get_current_hierarchy import register_get_current_hierarchy_tools
+from .compile_and_reload import register_compile_and_reload_tools
 
 def register_all_tools(mcp):
     """Register all refactored tools with the MCP server."""
@@ -20,4 +21,5 @@ def register_all_tools(mcp):
     register_execute_menu_item_tools(mcp)
     register_take_screenshot_tools(mcp)
     register_get_current_hierarchy_tools(mcp)
+    register_compile_and_reload_tools(mcp)
     print("Unity MCP Server tool registration complete.")

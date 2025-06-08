@@ -344,30 +344,10 @@ namespace UnityMcpBridge.Editor
             return false;
         }
         
-        // Refresh assets without recompilation
-        private static void ReloadUnity()
-        {
-            try
-            {
-                AssetDatabase.Refresh();
-                CompilationPipeline.RequestScriptCompilation();
-                AssetDatabase.Refresh();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[UnityMcpBridge] Failed to refresh assets: {e.Message}");
-            }
-        }
-        
         private static string ExecuteCommand(Command command)
         {
             try
             {
-                // Refresh assets before executing any command (except ping)
-                if (!string.IsNullOrEmpty(command?.type) && !command.type.Equals("ping", StringComparison.OrdinalIgnoreCase))
-                {
-                    ReloadUnity();
-                }
                 
                 if (string.IsNullOrEmpty(command.type))
                 {
@@ -408,6 +388,7 @@ namespace UnityMcpBridge.Editor
                     "execute_menu_item" => ExecuteMenuItem.HandleCommand(paramsObject),
                     "take_screenshot" => TakeScreenshot.HandleCommand(paramsObject),
                     "get_current_hierarchy" => GetCurrentHierarchy.HandleCommand(paramsObject),
+                    "compile_and_reload" => CompileAndReload.HandleCommand(paramsObject),
                     _ => throw new ArgumentException(
                         $"Unknown or unsupported command type: {command.type}"
                     ),
