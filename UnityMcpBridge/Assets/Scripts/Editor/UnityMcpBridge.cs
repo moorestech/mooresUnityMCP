@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
 using UnityMcpBridge.Editor.Helpers;
 using UnityMcpBridge.Editor.Models;
@@ -338,11 +339,32 @@ namespace UnityMcpBridge.Editor
 
             return false;
         }
-
+        
+        // Refresh assets without recompilation
+        private static void ReloadUnity()
+        {
+            try
+            {
+                AssetDatabase.Refresh();
+                CompilationPipeline.RequestScriptCompilation();
+                AssetDatabase.Refresh();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[UnityMcpBridge] Failed to refresh assets: {e.Message}");
+            }
+        }
+        
         private static string ExecuteCommand(Command command)
         {
             try
             {
+                // Refresh assets before executing any command (except ping)
+                if (!string.IsNullOrEmpty(command?.type) && !command.type.Equals("ping", StringComparison.OrdinalIgnoreCase))
+                {
+                    ReloadUnity();
+                }
+                
                 if (string.IsNullOrEmpty(command.type))
                 {
                     var errorResponse = new
