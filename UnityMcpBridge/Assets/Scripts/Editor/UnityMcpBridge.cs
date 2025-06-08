@@ -61,6 +61,10 @@ namespace UnityMcpBridge.Editor
 
             try
             {
+                // Sync local server to Applications folder on every Unity startup
+                ServerInstaller.SyncLocalServerToApplications();
+                
+                // Then ensure server is installed (for backwards compatibility)
                 ServerInstaller.EnsureServerInstalled();
             }
             catch (Exception ex)
