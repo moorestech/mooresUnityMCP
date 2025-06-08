@@ -389,6 +389,7 @@ namespace UnityMcpBridge.Editor
                     "take_screenshot" => TakeScreenshot.HandleCommand(paramsObject),
                     "get_current_hierarchy" => GetCurrentHierarchy.HandleCommand(paramsObject),
                     "compile_and_reload" => CompileAndReload.HandleCommand(paramsObject),
+                    "manage_prefab_variant" => ManagePrefabVariant.HandleCommand(paramsObject),
                     _ => throw new ArgumentException(
                         $"Unknown or unsupported command type: {command.type}"
                     ),
