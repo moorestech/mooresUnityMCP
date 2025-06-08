@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEditor;
 
 namespace UnityMcpBridge.Editor.Helpers
 {
@@ -170,6 +171,113 @@ namespace UnityMcpBridge.Editor.Helpers
         private static void UpdateServer(string location)
         {
             RunCommand("git", $"pull origin {BranchName}", workingDirectory: location);
+        }
+        
+        /// <summary>
+        /// Forces a git pull to update the server regardless of version check.
+        /// </summary>
+        public static void ForceUpdateServer()
+        {
+            try
+            {
+                string saveLocation = GetSaveLocation();
+                
+                if (!IsServerInstalled(saveLocation))
+                {
+                    Debug.Log("[ServerInstaller] Server not installed. Installing...");
+                    InstallServer(saveLocation);
+                }
+                else
+                {
+                    Debug.Log("[ServerInstaller] Forcing git pull to update server...");
+                    
+                    // Reset any local changes to avoid conflicts
+                    try
+                    {
+                        RunCommand("git", "reset --hard HEAD", workingDirectory: saveLocation);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"[ServerInstaller] Failed to reset: {e.Message}");
+                    }
+                    
+                    // Pull latest changes
+                    UpdateServer(saveLocation);
+                    Debug.Log("[ServerInstaller] Server updated successfully");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ServerInstaller] Failed to force update server: {e.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Syncs the local UnityMcpServer directory to the Applications folder using rsync
+        /// </summary>
+        public static void SyncLocalServerToApplications()
+        {
+            try
+            {
+                // Get the actual project root (not UnityMcpBridge subdirectory)
+                string unityProjectRoot = Directory.GetParent(Application.dataPath).FullName;
+                string projectRoot = Directory.GetParent(unityProjectRoot).FullName;
+                string localServerPath = Path.Combine(projectRoot, ServerFolder);
+                
+                Debug.Log($"[ServerInstaller] Application.dataPath: {Application.dataPath}");
+                Debug.Log($"[ServerInstaller] unityProjectRoot: {unityProjectRoot}");
+                Debug.Log($"[ServerInstaller] projectRoot: {projectRoot}");
+                Debug.Log($"[ServerInstaller] localServerPath: {localServerPath}");
+                
+                if (!Directory.Exists(localServerPath))
+                {
+                    Debug.LogError($"[ServerInstaller] Local server not found at: {localServerPath}");
+                    return;
+                }
+                
+                string saveLocation = GetSaveLocation();
+                string destinationPath = Path.Combine(saveLocation, ServerFolder);
+                
+                Debug.Log($"[ServerInstaller] Syncing local server from {localServerPath} to {destinationPath}");
+                
+                // Create parent directory if it doesn't exist
+                if (!Directory.Exists(saveLocation))
+                {
+                    Directory.CreateDirectory(saveLocation);
+                }
+                
+                // Use rsync for efficient synchronization (macOS/Linux)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    // rsync with delete to ensure destination matches source exactly
+                    // Exclude __pycache__, .git, .uv, .venv, and other unnecessary files
+                    string rsyncArgs = $"-av --delete --exclude='__pycache__' --exclude='.git' --exclude='.uv' --exclude='.venv' --exclude='*.pyc' \"{localServerPath}/\" \"{destinationPath}/\"";
+                    RunCommand("rsync", rsyncArgs);
+                    Debug.Log("[ServerInstaller] Successfully synced local server using rsync");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // For Windows, use robocopy
+                    string robocopyArgs = $"\"{localServerPath}\" \"{destinationPath}\" /MIR /XD __pycache__ .git .uv .venv /XF *.pyc";
+                    try
+                    {
+                        RunCommand("robocopy", robocopyArgs);
+                    }
+                    catch (Exception e)
+                    {
+                        // Robocopy returns non-zero exit codes for success with warnings
+                        if (!e.Message.Contains("exit code 1") && !e.Message.Contains("exit code 2"))
+                        {
+                            throw;
+                        }
+                    }
+                    Debug.Log("[ServerInstaller] Successfully synced local server using robocopy");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ServerInstaller] Failed to sync local server: {e.Message}");
+            }
         }
 
         /// <summary>
