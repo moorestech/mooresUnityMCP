@@ -93,110 +93,25 @@ namespace UnityMcpBridge.Editor.Tools
 
                 if (captureGameView)
                 {
-                    // Find the main camera
-                    Camera camera = Camera.main;
-                    if (camera == null)
-                    {
-                        // If no main camera, find any active camera
-                        Camera[] cameras = Camera.allCameras;
-                        foreach (Camera cam in cameras)
-                        {
-                            if (cam.enabled && cam.gameObject.activeInHierarchy)
-                            {
-                                camera = cam;
-                                break;
-                            }
-                        }
-                    }
+                    // Calculate the superSize parameter (resolution multiplier)
+                    int superSize = Mathf.Max(1, Mathf.RoundToInt(1.0f / resolution));
                     
-                    if (camera == null)
-                    {
-                        return Response.Error("No active camera found in the scene.");
-                    }
-                    
-                    // Store original settings
-                    RenderTexture originalTarget = camera.targetTexture;
-                    
-                    // Get Game View resolution using reflection
+                    // Get Game View using reflection
                     System.Type gameViewType = System.Type.GetType("UnityEditor.GameView,UnityEditor");
-                    EditorWindow gameView = EditorWindow.GetWindow(gameViewType);
+                    EditorWindow gameView = EditorWindow.GetWindow(gameViewType, false);
                     
-                    // Use reflection to get the actual game view size
-                    PropertyInfo prop = gameViewType.GetProperty("currentGameViewSize", BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (prop == null)
-                    {
-                        // Fallback: use default resolution
-                        Debug.LogWarning("Could not get Game View size via reflection, using default resolution");
-                    }
+                    // Focus the Game View to ensure it's rendered
+                    gameView.Focus();
                     
-                    // Get Game View size - try multiple methods
-                    int baseWidth = 0;
-                    int baseHeight = 0;
+                    // Force Unity to repaint before capturing
+                    gameView.Repaint();
+                    UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
                     
-                    // Method 1: Try to get from Handles
-                    Vector2 gameViewSize = Handles.GetMainGameViewSize();
-                    baseWidth = (int)gameViewSize.x;
-                    baseHeight = (int)gameViewSize.y;
+                    // Use ScreenCapture.CaptureScreenshot which captures everything including UI
+                    ScreenCapture.CaptureScreenshot(fullPath, superSize);
                     
-                    // Method 2: If that didn't work, try reflection on GameView
-                    if (baseWidth <= 0 || baseHeight <= 0)
-                    {
-                        var gameViewSizeProperty = gameViewType.GetProperty("currentGameViewSize", BindingFlags.NonPublic | BindingFlags.Instance);
-                        if (gameViewSizeProperty != null)
-                        {
-                            var sizeValue = gameViewSizeProperty.GetValue(gameView);
-                            if (sizeValue != null)
-                            {
-                                var widthProperty = sizeValue.GetType().GetProperty("width");
-                                var heightProperty = sizeValue.GetType().GetProperty("height");
-                                if (widthProperty != null && heightProperty != null)
-                                {
-                                    baseWidth = (int)widthProperty.GetValue(sizeValue);
-                                    baseHeight = (int)heightProperty.GetValue(sizeValue);
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Method 3: If still no luck, use default HD resolution
-                    if (baseWidth <= 0 || baseHeight <= 0)
-                    {
-                        Debug.LogWarning("Could not get Game View size, using default 1920x1080");
-                        baseWidth = 1920;
-                        baseHeight = 1080;
-                    }
-                    
-                    // Calculate target dimensions
-                    int targetWidth = Mathf.Max(1, Mathf.RoundToInt(baseWidth * resolution));
-                    int targetHeight = Mathf.Max(1, Mathf.RoundToInt(baseHeight * resolution));
-                    
-                    Debug.Log($"[TakeScreenshot] Base resolution: {baseWidth}x{baseHeight}, Target resolution: {targetWidth}x{targetHeight} (factor: {resolution})");
-                    
-                    // Create render texture with target dimensions
-                    RenderTexture rt = new RenderTexture(targetWidth, targetHeight, 24, RenderTextureFormat.ARGB32);
-                    rt.antiAliasing = 1;
-                    
-                    // Set camera to render to our texture
-                    camera.targetTexture = rt;
-                    camera.Render();
-                    
-                    // Read pixels
-                    RenderTexture.active = rt;
-                    Texture2D screenshot = new Texture2D(targetWidth, targetHeight, TextureFormat.RGB24, false);
-                    screenshot.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
-                    screenshot.Apply();
-                    
-                    // Save to file
-                    byte[] bytes = screenshot.EncodeToPNG();
-                    File.WriteAllBytes(fullPath, bytes);
-                    
-                    // Cleanup
-                    camera.targetTexture = originalTarget;
-                    RenderTexture.active = null;
-                    UnityEngine.Object.DestroyImmediate(rt);
-                    UnityEngine.Object.DestroyImmediate(screenshot);
-                    
-                    Debug.Log($"Game View screenshot saved to: {fullPath} (Resolution factor: {resolution})");
+                    Debug.Log($"Game View screenshot (including UI) requested: {fullPath} (SuperSize: {superSize}, Resolution factor: {resolution})");
+                    Debug.Log("Note: Screenshot capture is asynchronous. File will be available shortly.");
                 }
                 else
                 {

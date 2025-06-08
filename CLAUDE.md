@@ -63,6 +63,7 @@ Unity MCPは、LLM（Claude、Cursorなど）がUnity Editorと直接対話で�
 - デバッグ時は`config.py`の`log_level`を"DEBUG"に設定
 - UnityブリッジはPythonサーバーを自動的にインストール/更新（`ServerInstaller.cs`）
 - 新しいツールを追加する場合は、Unity側とPython側の両方に実装が必要
+- **重要**: Unity側のC#スクリプトを変更した後は、必ず`compile_and_reload`ツールを実行してUnityエディタに変更を反映させる必要があります
 
 ## 新しいMCPツールの追加方法
 
