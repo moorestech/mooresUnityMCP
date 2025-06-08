@@ -5,6 +5,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor;
 using UnityMcpBridge.Editor.Helpers;
 
 namespace UnityMcpBridge.Editor.Tools
@@ -62,6 +63,20 @@ namespace UnityMcpBridge.Editor.Tools
             
             // Active state
             properties.Add($"active: {obj.activeSelf.ToString().ToLower()}");
+            
+            // Check if this is a prefab instance
+            if (PrefabUtility.IsPartOfPrefabInstance(obj))
+            {
+                GameObject prefabSource = PrefabUtility.GetCorrespondingObjectFromSource(obj);
+                if (prefabSource != null)
+                {
+                    string prefabPath = AssetDatabase.GetAssetPath(prefabSource);
+                    if (!string.IsNullOrEmpty(prefabPath))
+                    {
+                        properties.Add($"prefab: \"{prefabPath}\"");
+                    }
+                }
+            }
             
             // Transform properties
             Vector3 pos = obj.transform.localPosition;
