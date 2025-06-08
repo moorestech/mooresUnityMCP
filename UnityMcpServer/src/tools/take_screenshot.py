@@ -9,28 +9,35 @@ def register_take_screenshot_tools(mcp: FastMCP):
     def take_screenshot(
         ctx: Context,
         file_name: str = None,
-        super_size: int = 1,
+        resolution: float = 1.0,
         capture_game_view: bool = True,
     ) -> Dict[str, Any]:
         """Captures a screenshot in Unity and returns the file path.
 
         Args:
             file_name: Optional filename for the screenshot (defaults to timestamp).
-            super_size: Resolution multiplier (1-4, default 1).
+            resolution: Resolution multiplier (0.1-1.0, default 1.0).
             capture_game_view: True for Game View, False for Scene View.
 
         Returns:
             Dictionary with screenshot path and metadata.
         """
         try:
+            # Validate resolution parameter
+            if resolution < 0.1 or resolution > 1.0:
+                return {"success": False, "message": "Resolution must be between 0.1 and 1.0"}
+            
             params = {
                 "action": "capture",
-                "fileName": file_name,
-                "superSize": super_size,
-                "captureGameView": capture_game_view,
+                "resolution": resolution,  # Always include resolution
+                "captureGameView": capture_game_view,  # Always include this
             }
-            params = {k: v for k, v in params.items() if v is not None}
             
+            # Only include fileName if provided
+            if file_name is not None:
+                params["fileName"] = file_name
+            
+            print(f"[DEBUG] Sending take_screenshot params: {params}")
             response = get_unity_connection().send_command("take_screenshot", params)
             
             if response.get("success"):
@@ -41,7 +48,7 @@ def register_take_screenshot_tools(mcp: FastMCP):
                     "absolutePath": response.get("data", {}).get("absolutePath"),
                     "fileName": response.get("data", {}).get("fileName"),
                     "captureType": response.get("data", {}).get("captureType"),
-                    "superSize": response.get("data", {}).get("superSize"),
+                    "resolution": response.get("data", {}).get("resolution"),
                 }
             else:
                 return {"success": False, "message": response.get("error")}
