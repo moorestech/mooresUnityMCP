@@ -132,6 +132,8 @@ namespace UnityMcpBridge.Editor.Tools
                         return RemoveComponentFromTarget(@params, targetToken, searchMethod);
                     case "set_component_property":
                         return SetComponentPropertyOnTarget(@params, targetToken, searchMethod);
+                    case "placeprefab":
+                        return PlacePrefab(@params);
 
                     default:
                         return Response.Error($"Unknown action: '{action}'.");
@@ -1040,6 +1042,120 @@ namespace UnityMcpBridge.Editor.Tools
                 $"Properties set for component '{compName}' on '{targetGo.name}'.",
                 GetGameObjectData(targetGo)
             );
+        }
+
+        private static object PlacePrefab(JObject @params)
+        {
+            string prefabPath = @params["prefabPath"]?.ToString();
+            if (string.IsNullOrEmpty(prefabPath))
+            {
+                return Response.Error("'prefabPath' parameter is required for 'placePrefab' action.");
+            }
+
+            // Parse position, rotation, and scale
+            Vector3? position = ParseVector3(@params["position"] as JArray);
+            Vector3? rotation = ParseVector3(@params["rotation"] as JArray);
+            Vector3? scale = ParseVector3(@params["scale"] as JArray);
+
+            // Optional parent
+            JToken parentToken = @params["parent"];
+            string name = @params["name"]?.ToString();
+
+            // Handle prefab path resolution (similar to create action)
+            if (!prefabPath.Contains("/") && !prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+            {
+                // Search for prefab by name
+                string prefabNameOnly = prefabPath;
+                Debug.Log($"[ManageGameObject.PlacePrefab] Searching for prefab named: '{prefabNameOnly}'");
+                string[] guids = AssetDatabase.FindAssets($"t:Prefab {prefabNameOnly}");
+                
+                if (guids.Length == 0)
+                {
+                    return Response.Error($"Prefab named '{prefabNameOnly}' not found anywhere in the project.");
+                }
+                else if (guids.Length > 1)
+                {
+                    string foundPaths = string.Join(", ", guids.Select(g => AssetDatabase.GUIDToAssetPath(g)));
+                    return Response.Error($"Multiple prefabs found matching name '{prefabNameOnly}': {foundPaths}. Please provide a more specific path.");
+                }
+                else
+                {
+                    prefabPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    Debug.Log($"[ManageGameObject.PlacePrefab] Found unique prefab at path: '{prefabPath}'");
+                }
+            }
+            else if (!prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath += ".prefab";
+            }
+
+            // Load the prefab asset
+            GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefabAsset == null)
+            {
+                return Response.Error($"Prefab asset not found at path: '{prefabPath}'");
+            }
+
+            try
+            {
+                // Instantiate the prefab
+                GameObject instance = PrefabUtility.InstantiatePrefab(prefabAsset) as GameObject;
+                if (instance == null)
+                {
+                    return Response.Error($"Failed to instantiate prefab at '{prefabPath}'.");
+                }
+
+                // Set name if provided
+                if (!string.IsNullOrEmpty(name))
+                {
+                    instance.name = name;
+                }
+
+                // Register undo
+                Undo.RegisterCreatedObjectUndo(instance, $"Place Prefab '{prefabAsset.name}'");
+
+                // Set parent if specified
+                if (parentToken != null)
+                {
+                    GameObject parentGo = FindObjectInternal(parentToken, "by_id_or_name_or_path");
+                    if (parentGo != null)
+                    {
+                        instance.transform.SetParent(parentGo.transform, false);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[ManageGameObject.PlacePrefab] Parent '{parentToken}' not found. Placing at root.");
+                    }
+                }
+
+                // Apply transform
+                if (position.HasValue)
+                {
+                    instance.transform.position = position.Value;
+                }
+                if (rotation.HasValue)
+                {
+                    instance.transform.eulerAngles = rotation.Value;
+                }
+                if (scale.HasValue)
+                {
+                    instance.transform.localScale = scale.Value;
+                }
+
+                // Select the placed instance
+                Selection.activeGameObject = instance;
+
+                Debug.Log($"[ManageGameObject.PlacePrefab] Placed prefab '{prefabAsset.name}' at position {instance.transform.position}");
+
+                return Response.Success(
+                    $"Prefab '{prefabAsset.name}' placed successfully in the scene.",
+                    GetGameObjectData(instance)
+                );
+            }
+            catch (Exception e)
+            {
+                return Response.Error($"Error placing prefab '{prefabPath}': {e.Message}");
+            }
         }
 
         // --- Internal Helpers ---

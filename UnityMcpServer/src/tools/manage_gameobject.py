@@ -39,7 +39,7 @@ def register_manage_gameobject_tools(mcp: FastMCP):
         """Manages GameObjects: create, modify, delete, find, and component operations.
 
         Args:
-            action: Operation (e.g., 'create', 'modify', 'find', 'add_component', 'remove_component', 'set_component_property').
+            action: Operation (e.g., 'create', 'modify', 'find', 'add_component', 'remove_component', 'set_component_property', 'placePrefab').
             target: GameObject identifier (name or path string) for modify/delete/component actions.
             search_method: How to find objects ('by_name', 'by_id', 'by_path', etc.). Used with 'find' and some 'target' lookups.
             name: GameObject name - used for both 'create' (initial name) and 'modify' (rename).
@@ -56,9 +56,17 @@ def register_manage_gameobject_tools(mcp: FastMCP):
                                   Example set nested property:
                                   - Access shared material: {"MeshRenderer": {"sharedMaterial.color": [1, 0, 0, 1]}}
             components_to_add: List of component names to add.
-            Action-specific arguments (e.g., position, rotation, scale for create/modify;
+            Action-specific arguments (e.g., position, rotation, scale for create/modify/placePrefab;
                      component_name for component actions;
                      search_term, find_all for 'find').
+                     
+        For 'placePrefab' action:
+            - prefab_path (required): Path to the prefab asset to instantiate
+            - position: World position as [x, y, z]
+            - rotation: Euler angles as [x, y, z]
+            - scale: Local scale as [x, y, z]
+            - parent: Parent GameObject to place under
+            - name: Name for the instantiated GameObject
 
         Returns:
             Dictionary with operation results ('success', 'message', 'data').
